@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RewardHub - Earn Money Watching Ads</title>
+
+    <!-- Telegram Web App SDK (required by RichAds integration) -->
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .app-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+
+        .app-tagline {
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+
+        .debug-badge {
+            font-size: 11px;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .debug-badge.ok {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.4);
+        }
+
+        .debug-badge.warn {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.4);
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .balance-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-amount {
+            font-size: 42px;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 15px;
+        }
+
+        .balance-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #a0a0a0;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00d4ff;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(0.98);
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .activity-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-time {
+            color: #a0a0a0;
+        }
+
+        .activity-reward {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 3px solid #00d4ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .info-box.warn {
+            background: rgba(231, 76, 60, 0.1);
+            border-left-color: #e74c3c;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #00d4ff;
+            color: #1a1a2e;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+            max-width: 85%;
+            text-align: center;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .app-container::-webkit-scrollbar { width: 6px; }
+        .app-container::-webkit-scrollbar-track { background: transparent; }
+        .app-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        @media (max-height: 600px) {
+            .balance-card { padding: 15px; }
+            .balance-amount { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-icon">💎</div>
+            <div class="app-name">RewardHub</div>
+            <div class="app-tagline">Earn money watching ads</div>
+            <div class="debug-badge warn" id="sdkStatus">SDK: checking...</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Balance Card -->
+            <div class="balance-card">
+                <div class="balance-label">Total Balance</div>
+                <div class="balance-amount" id="balanceAmount">$0.00</div>
+                <div class="balance-info">
+                    <span>Today: <strong id="todayAmount">$0.00</strong></span>
+                    <span>Ads Watched: <strong id="adCountDisplay">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Ads Completed</div>
+                    <div class="stat-value" id="statsAds">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Daily Earnings</div>
+                    <div class="stat-value" id="statsDaily">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="info-box" id="infoBox">
+                💡 Watch ads to earn money. Each ad takes a few seconds and gives you a reward!
+            </div>
+
+            <!-- Watch Ad Buttons -->
+            <button class="btn-primary" id="watchVideoBtn" onclick="watchVideo()">
+                Watch Video Ad 🎬
+            </button>
+
+            <button class="btn-primary" id="watchBannerBtn" onclick="watchBanner()">
+                Watch Interstitial Ad 🖼️
+            </button>
+
+            <!-- Quick Actions -->
+            <div class="btn-row">
+                <button class="btn-secondary" onclick="claimDaily()">🎁 Claim Bonus</button>
+                <button class="btn-secondary" onclick="shareApp()">📤 Share</button>
+            </div>
+
+            <!-- Activity -->
+            <div class="activity-section">
+                <div class="activity-title">Recent Activity</div>
+                <div class="activity-list" id="activityList">
+                    <div class="empty-state">No activity yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RichAds TelegramAdsController library -->
+    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"
+            onload="onSdkLoaded()"
+            onerror="onSdkFailed()"></script>
+
+    <script>
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        // pubId = your RichAds publisher id, appId = this Mini App's id.
+        // Both come from your RichAds publisher dashboard after you
+        // register the app as a traffic source.
+        // IMPORTANT: these are PLACEHOLDERS — ads will run in RichAds'
+        // own debug/test mode until you replace them with real values.
+        const AD_CONFIG = {
+            pubId: "YOUR_RICHADS_PUB_ID",
+            appId: "YOUR_RICHADS_APP_ID",
+            // Per RichAds docs: while debug is true, only test creatives
+            // are returned and nothing is billed/counted. Set to false
+            // (and ask your RichAds manager to confirm) before going live.
+            debug: true
+        };
+
+        let sdkReady = false;
+        let sdkInitAttempted = false;
+        let richadsController = null;
+
+        // Initialize Telegram Web App
+        let tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand();
+            tg.setBackgroundColor("#1a1a2e");
+            tg.setHeaderColor("#0f3460");
+        }
+
+        // User Data
+        let user = {
+            balance: 0,
+            today: 0,
+            ads: 0,
+            activity: [],
+            bonusClaimed: false,
+            lastResetDate: new Date().toDateString()
+        };
+
+        // ---------------- SDK loading / init ----------------
+
+        function setSdkBadge(text, ok) {
+            const badge = document.getElementById('sdkStatus');
+            badge.textContent = 'SDK: ' + text;
+            badge.className = 'debug-badge ' + (ok ? 'ok' : 'warn');
+        }
+
+        function onSdkLoaded() {
+            console.log('[RewardHub] RichAds script tag loaded');
+            initSdk();
+        }
+
+        function onSdkFailed() {
+            console.error('[RewardHub] RichAds script FAILED to load (network/blocked/wrong URL)');
+            setSdkBadge('failed to load', false);
+            showTestModeNotice('Ad SDK failed to load — running in local test mode.');
+        }
+
+        function initSdk() {
+            if (sdkInitAttempted) return;
+            sdkInitAttempted = true;
+
+            if (typeof window.TelegramAdsController !== 'function') {
+                console.error('[RewardHub] Script loaded but TelegramAdsController class is missing.');
+                setSdkBadge('class missing', false);
+                showTestModeNotice('Ad SDK class not found — running in local test mode.');
+                return;
+            }
+
+            if (AD_CONFIG.pubId === "YOUR_RICHADS_PUB_ID" || AD_CONFIG.appId === "YOUR_RICHADS_APP_ID") {
+                console.warn('[RewardHub] pubId/appId not configured — get them from your RichAds publisher dashboard');
+                setSdkBadge('pubId/appId not set', false);
+                showTestModeNotice('RichAds pubId/appId not configured — running in local test mode.');
+                return;
+            }
+
+            richadsController = new window.TelegramAdsController();
+            richadsController.initialize({
+                pubId: AD_CONFIG.pubId,
+                appId: AD_CONFIG.appId,
+                debug: AD_CONFIG.debug
+            });
+
+            sdkReady = true;
+            setSdkBadge(AD_CONFIG.debug ? 'ready (debug mode)' : 'ready', true);
+            console.log('[RewardHub] RichAds ready, pubId=', AD_CONFIG.pubId, 'appId=', AD_CONFIG.appId, 'debug=', AD_CONFIG.debug);
+        }
+
+        function showTestModeNotice(msg) {
+            const box = document.getElementById('infoBox');
+            box.classList.add('warn');
+            box.textContent = '⚠️ ' + msg + ' Rewards below are simulated and no real ad is shown to the user.';
+        }
+
+        // Fallback: if onload never fires check after 4s
+        setTimeout(() => {
+            if (!sdkInitAttempted) {
+                if (typeof window.TelegramAdsController === 'function') {
+                    console.warn('[RewardHub] onload never fired but TelegramAdsController is present — initializing late');
+                    initSdk();
+                } else {
+                    console.error('[RewardHub] TelegramAdsController still not available after timeout');
+                    setSdkBadge('not detected', false);
+                    showTestModeNotice('Ad SDK not detected — running in local test mode.');
+                }
+            }
+        }, 4000);
+
+        // ---------------- User data ----------------
+
+        function loadUser() {
+            const saved = localStorage.getItem('rewardhub_user');
+            if (saved) {
+                try {
+                    user = JSON.parse(saved);
+                } catch (e) {
+                    console.log('Error loading user data');
+                }
+            }
+
+            const todayStr = new Date().toDateString();
+            if (user.lastResetDate !== todayStr) {
+                console.log('[RewardHub] New day detected — resetting daily counters');
+                user.today = 0;
+                user.ads = 0;
+                user.bonusClaimed = false;
+                user.lastResetDate = todayStr;
+                saveUser();
+            }
+
+            updateUI();
+        }
+
+        function saveUser() {
+            try {
+                localStorage.setItem('rewardhub_user', JSON.stringify(user));
+            } catch (e) {
+                console.log('Error saving user data');
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('balanceAmount').textContent = '$' + user.balance.toFixed(2);
+            document.getElementById('todayAmount').textContent = '$' + user.today.toFixed(2);
+            document.getElementById('adCountDisplay').textContent = user.ads;
+            document.getElementById('statsAds').textContent = user.ads;
+            document.getElementById('statsDaily').textContent = '$' + user.today.toFixed(2);
+
+            const activityList = document.getElementById('activityList');
+            if (user.activity.length === 0) {
+                activityList.innerHTML = '<div class="empty-state">No activity yet</div>';
+            } else {
+                activityList.innerHTML = user.activity.map(item => `
+                    <div class="activity-item">
+                        <span class="activity-time">${item.type === 'ad' ? '🎬' : '🎁'} ${item.time}</span>
+                        <span class="activity-reward">+$${item.amount}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ---------------- Ad triggers ----------------
+        // RichAds resolves/rejects a promise for each trigger call, same
+        // pattern for video and interstitial banner formats.
+
+        function watchVideo() {
+            const btn = document.getElementById('watchVideoBtn');
+            runAd(richadsController && richadsController.triggerInterstitialVideo, btn, 'Watch Video Ad 🎬');
+        }
+
+        function watchBanner() {
+            const btn = document.getElementById('watchBannerBtn');
+            runAd(richadsController && richadsController.triggerInterstitialBanner, btn, 'Watch Interstitial Ad 🖼️');
+        }
+
+        function runAd(triggerFn, btn, originalLabel) {
+            btn.disabled = true;
+            btn.textContent = 'Loading ad...';
+
+            if (sdkReady && richadsController && typeof triggerFn === 'function') {
+                console.log('[RewardHub] Requesting ad via RichAds...');
+                triggerFn.call(richadsController)
+                    .then(function(result) {
+                        console.log('[RewardHub] Ad completed, rewarding user', result);
+                        const reward = (Math.random() * 0.05 + 0.01).toFixed(3);
+                        addReward(parseFloat(reward), false);
+                    })
+                    .catch(function(result) {
+                        console.error('[RewardHub] Ad error:', result);
+                        showToast('Ad failed to load — no fill available');
+                    })
+                    .finally(function() {
+                        btn.disabled = false;
+                        btn.textContent = originalLabel;
+                    });
+            } else {
+                console.warn('[RewardHub] SDK not ready, falling back to TEST MODE (no real ad shown)');
+                simulateAd();
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+            }
+        }
+
+        function simulateAd() {
+            const reward = (Math.random() * 0.05 + 0.01).toFixed(3);
+            addReward(parseFloat(reward), true);
+        }
+
+        function addReward(amount, isTestMode) {
+            user.balance += amount;
+            user.today += amount;
+            user.ads += 1;
+
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            user.activity.unshift({
+                type: 'ad',
+                amount: amount.toFixed(2),
+                time: time + (isTestMode ? ' (test)' : '')
+            });
+
+            if (user.activity.length > 20) {
+                user.activity.pop();
+            }
+
+            saveUser();
+            updateUI();
+            showToast((isTestMode ? '[TEST MODE] ' : '') + `Earned $${amount.toFixed(3)}!`);
+        }
+
+        function claimDaily() {
+            if (user.bonusClaimed) {
+                showToast('Bonus already claimed today');
+                return;
+            }
+
+            const bonus = 0.5;
+            user.balance += bonus;
+            user.today += bonus;
+            user.bonusClaimed = true;
+
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            user.activity.unshift({
+                type: 'bonus',
+                amount: bonus.toFixed(2),
+                time: time
+            });
+
+            saveUser();
+            updateUI();
+            showToast(`Daily bonus claimed! +$${bonus}`);
+
+            setTimeout(() => {
+                user.bonusClaimed = false;
+                saveUser();
+            }, 86400000);
+        }
+
+        function shareApp() {
+            if (tg && tg.shareLink) {
+                tg.shareLink('https://t.me/YourBotUsername/app', 'Check out RewardHub - Earn money by watching ads! 💎');
+            } else {
+                showToast('Share feature not available');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function resetDaily() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            const timeUntilReset = tomorrow - now;
+
+            setTimeout(() => {
+                console.log('[RewardHub] Midnight reached — resetting daily counters');
+                user.today = 0;
+                user.ads = 0;
+                user.bonusClaimed = false;
+                user.lastResetDate = new Date().toDateString();
+                saveUser();
+                updateUI();
+                resetDaily();
+            }, timeUntilReset);
+        }
+
+        // Initialize
+        loadUser();
+        resetDaily();
+    </script>
+</body>
+</html>
