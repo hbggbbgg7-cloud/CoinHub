@@ -378,12 +378,8 @@
         // IMPORTANT: these are PLACEHOLDERS — ads will run in RichAds'
         // own debug/test mode until you replace them with real values.
         const AD_CONFIG = {
-            pubId: "YOUR_RICHADS_PUB_ID",
-            appId: "YOUR_RICHADS_APP_ID",
-            // Per RichAds docs: while debug is true, only test creatives
-            // are returned and nothing is billed/counted. Set to false
-            // (and ask your RichAds manager to confirm) before going live.
-            debug: true
+            pubId: "1016530",
+            appId: "7994"
         };
 
         let sdkReady = false;
@@ -438,23 +434,18 @@
                 return;
             }
 
-            if (AD_CONFIG.pubId === "YOUR_RICHADS_PUB_ID" || AD_CONFIG.appId === "YOUR_RICHADS_APP_ID") {
-                console.warn('[RewardHub] pubId/appId not configured — get them from your RichAds publisher dashboard');
-                setSdkBadge('pubId/appId not set', false);
-                showTestModeNotice('RichAds pubId/appId not configured — running in local test mode.');
-                return;
-            }
-
+            // Matches RichAds' official snippet:
+            // window.TelegramAdsController = new TelegramAdsController();
+            // window.TelegramAdsController.initialize({ pubId, appId });
             richadsController = new window.TelegramAdsController();
             richadsController.initialize({
                 pubId: AD_CONFIG.pubId,
-                appId: AD_CONFIG.appId,
-                debug: AD_CONFIG.debug
+                appId: AD_CONFIG.appId
             });
 
             sdkReady = true;
-            setSdkBadge(AD_CONFIG.debug ? 'ready (debug mode)' : 'ready', true);
-            console.log('[RewardHub] RichAds ready, pubId=', AD_CONFIG.pubId, 'appId=', AD_CONFIG.appId, 'debug=', AD_CONFIG.debug);
+            setSdkBadge('ready', true);
+            console.log('[RewardHub] RichAds ready, pubId=', AD_CONFIG.pubId, 'appId=', AD_CONFIG.appId);
         }
 
         function showTestModeNotice(msg) {
