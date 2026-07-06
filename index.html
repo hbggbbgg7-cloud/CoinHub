@@ -372,14 +372,14 @@
         // ============================================================
         // CONFIG
         // ============================================================
-        // pubId = your RichAds publisher id, appId = this Mini App's id.
-        // Both come from your RichAds publisher dashboard after you
-        // register the app as a traffic source.
-        // IMPORTANT: these are PLACEHOLDERS — ads will run in RichAds'
-        // own debug/test mode until you replace them with real values.
+        // pubId / appId come from your RichAds Publisher dashboard
+        // (Traffic sources tab). debug is intentionally left OUT/false
+        // here because this build must only ever show REAL ads and
+        // must never fabricate a reward for a test/simulated ad.
         const AD_CONFIG = {
             pubId: "1016530",
-            appId: "7994"
+            appId: "7994",
+            debug: false   // production: only real, paid ads count
         };
 
         let sdkReady = false;
@@ -420,7 +420,7 @@
         function onSdkFailed() {
             console.error('[RewardHub] RichAds script FAILED to load (network/blocked/wrong URL)');
             setSdkBadge('failed to load', false);
-            showTestModeNotice('Ad SDK failed to load — running in local test mode.');
+            showAdsUnavailableNotice('Ad service failed to load.');
         }
 
         function initSdk() {
@@ -430,17 +430,18 @@
             if (typeof window.TelegramAdsController !== 'function') {
                 console.error('[RewardHub] Script loaded but TelegramAdsController class is missing.');
                 setSdkBadge('class missing', false);
-                showTestModeNotice('Ad SDK class not found — running in local test mode.');
+                showAdsUnavailableNotice('Ad service is temporarily unavailable.');
                 return;
             }
 
             // Matches RichAds' official snippet:
             // window.TelegramAdsController = new TelegramAdsController();
-            // window.TelegramAdsController.initialize({ pubId, appId });
+            // window.TelegramAdsController.initialize({ pubId, appId, debug });
             richadsController = new window.TelegramAdsController();
             richadsController.initialize({
                 pubId: AD_CONFIG.pubId,
-                appId: AD_CONFIG.appId
+                appId: AD_CONFIG.appId,
+                debug: AD_CONFIG.debug
             });
 
             sdkReady = true;
@@ -448,10 +449,10 @@
             console.log('[RewardHub] RichAds ready, pubId=', AD_CONFIG.pubId, 'appId=', AD_CONFIG.appId);
         }
 
-        function showTestModeNotice(msg) {
+        function showAdsUnavailableNotice(msg) {
             const box = document.getElementById('infoBox');
             box.classList.add('warn');
-            box.textContent = '⚠️ ' + msg + ' Rewards below are simulated and no real ad is shown to the user.';
+            box.textContent = '⚠️ ' + msg + ' No reward is given unless a real ad is actually shown.';
         }
 
         // Fallback: if onload never fires check after 4s
@@ -463,7 +464,7 @@
                 } else {
                     console.error('[RewardHub] TelegramAdsController still not available after timeout');
                     setSdkBadge('not detected', false);
-                    showTestModeNotice('Ad SDK not detected — running in local test mode.');
+                    showAdsUnavailableNotice('Ad service not detected.');
                 }
             }
         }, 4000);
@@ -524,6 +525,14 @@
         // ---------------- Ad triggers ----------------
         // RichAds resolves/rejects a promise for each trigger call, same
         // pattern for video and interstitial banner formats.
+        //
+        // IMPORTANT FIX: the reward is only ever granted inside the
+        // .then() of a real ad call. If the SDK isn't ready, or the
+        // network returns "no fill", the user gets a clear message and
+        // NO reward — the previous version's fallback to simulateAd()
+        // used to pay out fake money even when no ad was shown, which
+        // is both misleading to users and a way to lose money with no
+        // corresponding ad revenue.
 
         function watchVideo() {
             const btn = document.getElementById('watchVideoBtn');
@@ -536,39 +545,33 @@
         }
 
         function runAd(triggerFn, btn, originalLabel) {
+            if (!(sdkReady && richadsController && typeof triggerFn === 'function')) {
+                console.warn('[RewardHub] SDK not ready — no ad can be shown, no reward given');
+                showToast('Ads are not available right now. Please try again shortly.');
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Loading ad...';
 
-            if (sdkReady && richadsController && typeof triggerFn === 'function') {
-                console.log('[RewardHub] Requesting ad via RichAds...');
-                triggerFn.call(richadsController)
-                    .then(function(result) {
-                        console.log('[RewardHub] Ad completed, rewarding user', result);
-                        const reward = (Math.random() * 0.05 + 0.01).toFixed(3);
-                        addReward(parseFloat(reward), false);
-                    })
-                    .catch(function(result) {
-                        console.error('[RewardHub] Ad error:', result);
-                        showToast('Ad failed to load — no fill available');
-                    })
-                    .finally(function() {
-                        btn.disabled = false;
-                        btn.textContent = originalLabel;
-                    });
-            } else {
-                console.warn('[RewardHub] SDK not ready, falling back to TEST MODE (no real ad shown)');
-                simulateAd();
-                btn.disabled = false;
-                btn.textContent = originalLabel;
-            }
+            console.log('[RewardHub] Requesting ad via RichAds...');
+            triggerFn.call(richadsController)
+                .then(function(result) {
+                    console.log('[RewardHub] Ad completed, rewarding user', result);
+                    const reward = (Math.random() * 0.05 + 0.01).toFixed(3);
+                    addReward(parseFloat(reward));
+                })
+                .catch(function(result) {
+                    console.error('[RewardHub] Ad error:', result);
+                    showToast('No ad available right now — try again later.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = originalLabel;
+                });
         }
 
-        function simulateAd() {
-            const reward = (Math.random() * 0.05 + 0.01).toFixed(3);
-            addReward(parseFloat(reward), true);
-        }
-
-        function addReward(amount, isTestMode) {
+        function addReward(amount) {
             user.balance += amount;
             user.today += amount;
             user.ads += 1;
@@ -579,7 +582,7 @@
             user.activity.unshift({
                 type: 'ad',
                 amount: amount.toFixed(2),
-                time: time + (isTestMode ? ' (test)' : '')
+                time: time
             });
 
             if (user.activity.length > 20) {
@@ -588,7 +591,7 @@
 
             saveUser();
             updateUI();
-            showToast((isTestMode ? '[TEST MODE] ' : '') + `Earned $${amount.toFixed(3)}!`);
+            showToast(`Earned $${amount.toFixed(3)}!`);
         }
 
         function claimDaily() {
@@ -666,3 +669,4 @@
     </script>
 </body>
 </html>
+
